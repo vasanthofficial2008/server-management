@@ -37,6 +37,22 @@ def list_projects(
     projects = db.query(Project).order_by(Project.id.desc()).all()
     return [enrich_project_out(db, p) for p in projects]
 
+@router.post("/discover", response_model=List[ProjectOut])
+def discover_projects_endpoint(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from backend.app.services.project_discovery import discover_real_projects
+    projects = discover_real_projects(db)
+    log_audit_event(
+        db,
+        action="PROJECTS_AUTO_DISCOVER",
+        username=current_user.username,
+        user_id=current_user.id,
+        details=f"Auto-discovered {len(projects)} real application projects on host system."
+    )
+    return [enrich_project_out(db, p) for p in projects]
+
 @router.post("", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
 def create_project(
     request: Request,

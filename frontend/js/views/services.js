@@ -9,7 +9,10 @@ const ServicesView = {
             <h3 class="card-title">Ubuntu Systemd Services & Application Daemons</h3>
             <small style="color:var(--text-muted)">Manage whitelisted systemd unit services (start, stop, restart, enable, disable, reload)</small>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="ServicesView.loadServices()">🔄 Refresh</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary btn-sm" onclick="ServicesView.handleSyncServices()">⚡ Sync Real Services</button>
+            <button class="btn btn-secondary btn-sm" onclick="ServicesView.loadServices()">🔄 Refresh</button>
+          </div>
         </div>
         <div class="table-container">
           <table class="table">
@@ -108,6 +111,18 @@ const ServicesView = {
       }).join('');
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="10" style="color:var(--accent-rose)">Error fetching systemd services: ${err.message}</td></tr>`;
+    }
+  },
+
+  async handleSyncServices() {
+    const tbody = document.getElementById('services-tbody');
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">⚡ Scanning systemctl & active processes on host system...</td></tr>`;
+    try {
+      await API.syncServices();
+      await this.loadServices();
+    } catch (err) {
+      alert(`Services sync failed: ${err.message}`);
+      await this.loadServices();
     }
   },
 

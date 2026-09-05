@@ -9,7 +9,10 @@ const ProjectsView = {
             <h3 class="card-title">Deployed Projects & Applications</h3>
             <small style="color:var(--text-muted)">Manage static sites, FastAPI, Flask, and Python applications</small>
           </div>
-          <button class="btn btn-primary" onclick="ProjectsView.openCreateModal()">+ Create Project</button>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="ProjectsView.handleDiscoverProjects()">🔍 Auto-Discover Real Projects</button>
+            <button class="btn btn-primary" onclick="ProjectsView.openCreateModal()">+ Create Project</button>
+          </div>
         </div>
         <div class="table-container">
           <table class="table">
@@ -208,6 +211,18 @@ const ProjectsView = {
       }).join('');
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9" style="color:var(--accent-rose)">Failed to load projects: ${err.message}</td></tr>`;
+    }
+  },
+
+  async handleDiscoverProjects() {
+    const tbody = document.getElementById('projects-tbody');
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">🔍 Scanning host filesystem & listening network ports for real projects...</td></tr>`;
+    try {
+      await API.discoverProjects();
+      await this.loadProjects();
+    } catch (err) {
+      alert(`Auto-discovery failed: ${err.message}`);
+      await this.loadProjects();
     }
   },
 

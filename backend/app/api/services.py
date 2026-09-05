@@ -21,7 +21,25 @@ def list_services(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    from backend.app.services.project_discovery import discover_system_services
+    discover_system_services(db)
     return db.query(ServiceModel).order_by(ServiceModel.id.asc()).all()
+
+@router.post("/sync", response_model=List[ServiceOut])
+def sync_services_endpoint(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from backend.app.services.project_discovery import discover_system_services
+    services = discover_system_services(db)
+    log_audit_event(
+        db,
+        action="SERVICES_AUTO_SYNC",
+        username=current_user.username,
+        user_id=current_user.id,
+        details=f"Synchronized {len(services)} real system services on host system."
+    )
+    return services
 
 @router.post("", response_model=ServiceOut)
 def create_service(

@@ -99,6 +99,10 @@ const API = {
     return this.request('/projects');
   },
 
+  discoverProjects() {
+    return this.request('/projects/discover', { method: 'POST' });
+  },
+
   getProject(id) {
     return this.request(`/projects/${id}`);
   },
@@ -148,6 +152,10 @@ const API = {
   // Services
   getServices() {
     return this.request('/services');
+  },
+
+  syncServices() {
+    return this.request('/services/sync', { method: 'POST' });
   },
 
   serviceAction(id, action) {
