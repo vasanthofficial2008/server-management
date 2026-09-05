@@ -41,9 +41,23 @@ const API = {
         return null;
       }
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      let data = {};
+
+      if (text && contentType.includes('application/json')) {
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = { detail: text || 'Invalid JSON response from server' };
+        }
+      } else if (text) {
+        data = { detail: text };
+      }
+
       if (!response.ok) {
-        throw new Error(data.detail || 'API Request Failed');
+        const errorMsg = typeof data.detail === 'string' ? data.detail : (data.message || `API Request Failed (HTTP ${response.status})`);
+        throw new Error(errorMsg);
       }
       return data;
     } catch (err) {

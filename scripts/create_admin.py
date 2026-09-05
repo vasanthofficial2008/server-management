@@ -41,7 +41,18 @@ def create_admin(username: str = None, email: str = None, password: str = None, 
         # Check existing user
         existing_user = db.query(User).filter((User.username == username) | (User.email == email)).first()
         if existing_user:
-            print(f"[WARNING] Administrator account with username '{username}' or email '{email}' already exists.")
+            existing_user.hashed_password = get_password_hash(password)
+            existing_user.is_superuser = True
+            existing_user.is_active = True
+            db.commit()
+            log_audit_event(
+                db,
+                action="ADMIN_PASSWORD_UPDATE",
+                username=existing_user.username,
+                user_id=existing_user.id,
+                details=f"Updated administrator password for '{existing_user.username}' via CLI script."
+            )
+            print(f"[SUCCESS] Updated password for administrator user '{existing_user.username}' successfully!")
             return
 
         hashed = get_password_hash(password)
