@@ -1,8 +1,8 @@
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from backend.app.config import settings
 from backend.app.database import engine, Base
@@ -36,7 +36,6 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     import logging
     logging.getLogger("serverpilot").error(f"Global unhandled exception on {request.url}: {exc}", exc_info=True)
-    from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal Server Error: {str(exc)}"}
