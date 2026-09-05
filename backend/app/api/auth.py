@@ -14,67 +14,86 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
 def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
-    # Enforce rate limiter
-    login_limiter.check(request)
-    
-    ip_addr = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "unknown")
-
-    user = db.query(User).filter(User.username == credentials.username).first()
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        login_limiter.record_failure(request)
-        log_audit_event(
-            db,
-            action="LOGIN_FAILURE",
-            username=credentials.username,
-            ip_address=ip_addr,
-            user_agent=user_agent,
-            details=f"Invalid login attempt for username '{credentials.username}'",
-            status="FAILURE"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    try:
+        # Enforce rate limiter
+        login_limiter.check(request)
         
-    if not user.is_active:
-        login_limiter.record_failure(request)
-        log_audit_event(
-            db,
-            action="LOGIN_FAILURE",
-            username=user.username,
-            user_id=user.id,
-            ip_address=ip_addr,
-            user_agent=user_agent,
-            details="Login attempt on inactive user account",
-            status="FAILURE"
+        ip_addr = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("user-agent", "unknown")
+
+        user = db.query(User).filter(User.username == credentials.username).first()
+        if not user or not verify_password(credentials.password, user.hashed_password):
+            login_limiter.record_failure(request)
+            try:
+                log_audit_event(
+                    db,
+                    action="LOGIN_FAILURE",
+                    username=credentials.username,
+                    ip_address=ip_addr,
+                    user_agent=user_agent,
+                    details=f"Invalid login attempt for username '{credentials.username}'",
+                    status="FAILURE"
+                )
+            except Exception:
+                pass
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            
+        if not user.is_active:
+            login_limiter.record_failure(request)
+            try:
+                log_audit_event(
+                    db,
+                    action="LOGIN_FAILURE",
+                    username=user.username,
+                    user_id=user.id,
+                    ip_address=ip_addr,
+                    user_agent=user_agent,
+                    details="Login attempt on inactive user account",
+                    status="FAILURE"
+                )
+            except Exception:
+                pass
+            raise HTTPException(status_code=400, detail="Inactive user account")
+
+        # Reset failure rate limiter on successful authentication
+        login_limiter.reset(request)
+
+        # Create session record in database
+        access_token = create_user_session(db, user, ip_address=ip_addr, user_agent=user_agent)
+
+        # Audit log login success
+        try:
+            log_audit_event(
+                db,
+                action="LOGIN_SUCCESS",
+                username=user.username,
+                user_id=user.id,
+                ip_address=ip_addr,
+                user_agent=user_agent,
+                details=f"Administrator user '{user.username}' logged in successfully",
+                status="SUCCESS"
+            )
+        except Exception:
+            pass
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        import logging
+        logging.getLogger("serverpilot").error(f"Login endpoint failure: {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication error: {str(exc)}"
         )
-        raise HTTPException(status_code=400, detail="Inactive user account")
-
-    # Reset failure rate limiter on successful authentication
-    login_limiter.reset(request)
-
-    # Create session record in database
-    access_token = create_user_session(db, user, ip_address=ip_addr, user_agent=user_agent)
-
-    # Audit log login success
-    log_audit_event(
-        db,
-        action="LOGIN_SUCCESS",
-        username=user.username,
-        user_id=user.id,
-        ip_address=ip_addr,
-        user_agent=user_agent,
-        details=f"Administrator user '{user.username}' logged in successfully",
-        status="SUCCESS"
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user
-    }
 
 @router.post("/logout")
 def logout(

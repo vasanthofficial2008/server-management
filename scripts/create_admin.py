@@ -84,6 +84,31 @@ def create_admin(username: str = None, email: str = None, password: str = None, 
         sys.exit(1)
     finally:
         db.close()
+        fix_database_permissions()
+
+def fix_database_permissions():
+    """Ensure database file and directory are owned and writable by serverpilot system user on Linux."""
+    try:
+        import pwd, grp
+        sp_user = pwd.getpwnam("serverpilot")
+        sp_group = grp.getgrnam("serverpilot")
+        
+        from backend.app.config import settings
+        data_dir = settings.DATA_DIR
+        if data_dir.exists():
+            os.chown(data_dir, sp_user.pw_uid, sp_group.gr_gid)
+            os.chmod(data_dir, 0o770)
+            for root, dirs, files in os.walk(data_dir):
+                for d in dirs:
+                    p = os.path.join(root, d)
+                    os.chown(p, sp_user.pw_uid, sp_group.gr_gid)
+                    os.chmod(p, 0o770)
+                for f in files:
+                    p = os.path.join(root, f)
+                    os.chown(p, sp_user.pw_uid, sp_group.gr_gid)
+                    os.chmod(p, 0o660)
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a ServerPilot Control Panel Administrator User.")
