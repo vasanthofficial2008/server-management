@@ -88,8 +88,10 @@ class ProjectBase(BaseModel):
 
     @field_validator("app_type")
     def validate_app_type(cls, v):
+        if not v:
+            return "Python Custom"
         if v not in ALLOWED_APP_TYPES:
-            raise ValueError(f"Invalid app_type '{v}'. Must be one of {ALLOWED_APP_TYPES}")
+            return "Custom Application"
         return v
 
     @field_validator("port")
@@ -99,6 +101,12 @@ class ProjectBase(BaseModel):
         return v
 
 class ProjectCreate(ProjectBase):
+    @field_validator("app_type")
+    def validate_app_type_create(cls, v):
+        if v not in ALLOWED_APP_TYPES:
+            raise ValueError(f"Invalid app_type '{v}'. Must be one of {ALLOWED_APP_TYPES}")
+        return v
+
     @field_validator("deployment_directory")
     def validate_deploy_dir(cls, v, info):
         proj_name = info.data.get("name", "app")
@@ -124,7 +132,7 @@ class ProjectUpdate(BaseModel):
     @field_validator("app_type")
     def validate_app_type(cls, v):
         if v is not None and v not in ALLOWED_APP_TYPES:
-            raise ValueError(f"Invalid app_type '{v}'. Must be one of {ALLOWED_APP_TYPES}")
+            return "Custom Application"
         return v
 
     @field_validator("deployment_directory")
