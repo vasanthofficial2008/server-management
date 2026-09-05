@@ -46,7 +46,7 @@
       try {
         const res = await API.login(u, p);
         API.setToken(res.access_token);
-        window.location.href = '/#/dashboard';
+        window.location.href = '/';
       } catch (err) {
         errEl.innerText = err.message || 'Invalid username or password.';
         errEl.style.display = 'block';

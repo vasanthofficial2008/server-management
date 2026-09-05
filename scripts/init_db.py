@@ -23,16 +23,16 @@ def init_db(reset: bool = True):
     db = SessionLocal()
     try:
         # Create initial admin user from env or default seed if not exists
-        admin = db.query(User).filter(User.username == "admin").first()
+        admin_user = os.getenv("ADMIN_USERNAME", "admin")
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@serverpilot.local")
+        admin_pass = os.getenv("ADMIN_PASSWORD")
+
+        admin = db.query(User).filter(User.username == admin_user).first()
         if not admin:
-            admin_user = os.getenv("ADMIN_USERNAME", "admin")
-            admin_email = os.getenv("ADMIN_EMAIL", "admin@serverpilot.local")
-            admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
-            
             admin = User(
                 username=admin_user,
                 email=admin_email,
-                hashed_password=get_password_hash(admin_pass),
+                hashed_password=get_password_hash(admin_pass or "admin123"),
                 full_name="ServerPilot Admin",
                 is_active=True,
                 is_superuser=True
@@ -41,6 +41,10 @@ def init_db(reset: bool = True):
             db.commit()
             db.refresh(admin)
             print(f"Default admin created: username '{admin_user}'")
+        elif admin_pass:
+            admin.hashed_password = get_password_hash(admin_pass)
+            db.commit()
+            print(f"Updated password for admin user '{admin_user}'")
 
         # Create sample services
         services_data = [
