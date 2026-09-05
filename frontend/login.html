@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - ServerPilot Control Panel</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">S</div>
+      <h2 class="login-title">ServerPilot Control Panel</h2>
+      <p class="login-subtitle">Ubuntu Server Management & Deployment Console</p>
+    </div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" class="form-input" required value="admin" placeholder="Enter admin username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" class="form-input" required value="admin123" placeholder="Enter password">
+      </div>
+
+      <div id="login-error" style="display:none; color:var(--accent-rose); font-size:13px; margin-bottom:16px;"></div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px;">Sign In to ServerPilot</button>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('login-error');
+      errEl.style.display = 'none';
+
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+
+      try {
+        const res = await API.login(u, p);
+        API.setToken(res.access_token);
+        window.location.href = '/#/dashboard';
+      } catch (err) {
+        errEl.innerText = err.message || 'Invalid username or password.';
+        errEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

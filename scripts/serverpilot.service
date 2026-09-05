@@ -1,0 +1,23 @@
+[Unit]
+Description=ServerPilot Control Panel Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=serverpilot
+Group=serverpilot
+WorkingDirectory=/opt/serverpilot
+EnvironmentFile=/etc/serverpilot/.env
+ExecStart=/opt/serverpilot/venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Security Hardening & Isolation
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/serverpilot /var/log/serverpilot /etc/serverpilot
+
+[Install]
+WantedBy=multi-user.target
