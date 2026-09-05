@@ -20,6 +20,7 @@ systemctl stop "${SERVICE_NAME}" || true
 
 if [ -d "${APP_DIR}/.git" ]; then
     echo "[INFO] Pulling latest git repository updates..."
+    git config --global --add safe.directory "${APP_DIR}" 2>/dev/null || true
     git -C "${APP_DIR}" pull origin main || true
 fi
 
